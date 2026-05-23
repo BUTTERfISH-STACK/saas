@@ -40,13 +40,13 @@ export default function VellonCVs() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
-  // Reusable connection check (can be called manually)
-  const checkVellonCoreConnection = async () => {
+  // Reusable connection check (returns true if online)
+  const checkVellonCoreConnection = async (): Promise<boolean> => {
     setEngineStatus('checking');
     try {
       const res = await fetch('/api/models');
       const data = await res.json();
-      
+       
         if (data.models?.length > 0) {
           setModels(data.models);
           // Prefer fast, free, high-quality models for VellonCVs
@@ -60,17 +60,19 @@ export default function VellonCVs() {
           if (preferred) {
             setSelectedModel(preferred.name);
           } else {
-            // Fallback to first available model
             setSelectedModel(data.models[0].name);
           }
           setEngineStatus('online');
+          return true;
         } else {
           setEngineStatus('offline');
           setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
+          return false;
         }
     } catch {
       setEngineStatus('offline');
       setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
+      return false;
     }
   };
 
@@ -190,6 +192,17 @@ export default function VellonCVs() {
   const sendMessage = async (customMessage?: string) => {
     const messageText = (customMessage || input).trim();
     if (!messageText || isLoading) return;
+
+    // Always try to reconnect if we think we're offline
+    if (engineStatus !== 'online') {
+      const isNowOnline = await checkVellonCoreConnection();
+      if (!isNowOnline) {
+        toast.error('Still offline', {
+          description: 'Please make sure "ollama serve" is running in another terminal, then try again.'
+        });
+        return;
+      }
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -490,6 +503,22 @@ export default function VellonCVs() {
 
         {/* Chat Messages — Ultra Clean & Spacious */}
         <div className="flex-1 overflow-y-auto px-6 md:px-12 pt-12 pb-8" style={{ scrollbarWidth: 'thin' }}>
+          {/* Clear reconnect banner when core is offline */}
+          {engineStatus !== 'online' && (
+            <div className="max-w-2xl mx-auto mb-6 p-4 rounded-2xl bg-[#1A0F0F] border border-rose-900/50 text-center">
+              <div className="text-rose-400 font-medium mb-1">Vellon Core is offline</div>
+              <div className="text-sm text-white/60 mb-3">
+                Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> is running in another terminal.
+              </div>
+              <button 
+                onClick={checkVellonCoreConnection}
+                className="px-4 py-2 text-sm rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition"
+              >
+                ↻ Reconnect now
+              </button>
+            </div>
+          )}
+
           {messages.length === 0 && (
             <div className="max-w-[620px] mx-auto pt-16 text-center">
               <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/[0.03] border border-white/[0.06] text-[11px] tracking-[2.5px] text-white/50 mb-6 font-medium">
@@ -589,16 +618,18 @@ export default function VellonCVs() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  uploadedCV 
-                    ? "Tell me how you’d like to refine your profile…" 
-                    : "Describe your goals or upload a resume to begin…"
+                  engineStatus !== 'online' 
+                    ? "Core is offline — click reconnect in the sidebar or above" 
+                    : uploadedCV 
+                      ? "Tell me how you’d like to refine your profile…" 
+                      : "Describe your goals or upload a resume to begin…"
                 }
                 className="w-full bg-[#0A0A0C] border border-white/[0.08] focus:border-[var(--gold-primary)] transition-all rounded-[22px] pl-6 pr-16 py-[17px] text-[15px] placeholder:text-white/40 outline-none tracking-[-0.1px] shadow-inner focus-gold"
-                disabled={isLoading}
+                disabled={isLoading || engineStatus !== 'online'}
               />
               <button 
                 type="submit" 
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || engineStatus !== 'online'}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-[42px] h-[42px] rounded-[16px] gold-button flex items-center justify-center disabled:opacity-35 shadow-luxury"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={17} />}
