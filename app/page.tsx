@@ -282,9 +282,9 @@ export default function VellonCVs() {
   };
 
   const getStatusColor = () => {
-    if (engineStatus === 'online') return 'bg-emerald-500';
-    if (engineStatus === 'offline') return 'bg-rose-500';
-    return 'bg-amber-500';
+    if (engineStatus === 'online') return 'status-gold'; // Elegant gold for premium feel
+    if (engineStatus === 'offline') return 'bg-rose-500/90';
+    return 'bg-amber-400';
   };
 
   return (
@@ -294,8 +294,8 @@ export default function VellonCVs() {
         {/* Sidebar Header */}
         <div className="h-20 px-6 flex items-center justify-between border-b border-white/[0.06]">
           <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center shadow-inner">
-              <Sparkles className="w-5 h-5 text-black" strokeWidth={2.25} />
+            <div className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center shadow-inner ring-1 ring-offset-2 ring-offset-[#050505] ring-[var(--gold-primary)]/30">
+              <Sparkles className="w-5 h-5 text-black" />
             </div>
             <div>
               <div className="font-semibold tracking-[-0.02em] text-[21px] leading-none">VellonCVs</div>
@@ -322,14 +322,14 @@ export default function VellonCVs() {
             <div className="pl-5 mt-3 space-y-1">
               <button 
                 onClick={checkVellonCoreConnection}
-                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition-colors"
+                className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
               >
                 ↻ Check connection again
               </button>
               <a 
                 href="/docs/troubleshooting-vellon-core.md" 
                 target="_blank"
-                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition-colors"
+                className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
               >
                 → Open troubleshooting guide
               </a>
@@ -344,7 +344,7 @@ export default function VellonCVs() {
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="w-full appearance-none bg-[#111113] border border-white/[0.08] hover:border-white/[0.15] focus:border-white/20 transition-all text-sm font-medium tracking-[-0.1px] rounded-2xl px-4 py-[13px] pr-10 outline-none cursor-pointer"
+              className="w-full appearance-none bg-[#111113] border border-white/[0.08] hover:border-[var(--gold-primary)]/30 focus:border-[var(--gold-primary)] transition-all text-sm font-medium tracking-[-0.1px] rounded-2xl px-4 py-[13px] pr-10 outline-none cursor-pointer focus-gold"
             >
               {models.map((m) => (
                 <option key={m.name} value={m.name}>{m.name}</option>
@@ -361,7 +361,7 @@ export default function VellonCVs() {
           <div className="text-[10px] font-medium tracking-[1px] text-white/40 mb-2.5 pl-1">PROFESSIONAL PROFILE</div>
           
           {!uploadedCV ? (
-            <label className="group block border border-white/[0.08] hover:border-white/[0.2] transition-all bg-[#0F0F11] hover:bg-[#111113] rounded-3xl p-7 cursor-pointer">
+            <label className="group block border border-white/[0.08] hover:border-[var(--gold-primary)]/30 transition-all bg-[#0F0F11] hover:bg-[#111113] rounded-3xl p-7 cursor-pointer luxury-card">
               <div className="flex flex-col items-center text-center">
                 <div className="w-11 h-11 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-4 group-hover:bg-white/[0.07] transition-colors">
                   <Upload className="w-5 h-5 text-white/60" />
@@ -372,7 +372,7 @@ export default function VellonCVs() {
               <input type="file" accept=".pdf,.docx,.doc,.txt" onChange={handleCVUpload} className="hidden" />
             </label>
           ) : (
-            <div className="bg-[#111113] border border-white/[0.06] rounded-3xl p-5 flex items-start gap-4">
+            <div className="bg-[#111113] border border-white/[0.06] rounded-3xl p-5 flex items-start gap-4 luxury-card">
               <div className="mt-0.5">
                 <FileText className="w-5 h-5 text-white/80" />
               </div>
@@ -416,7 +416,7 @@ export default function VellonCVs() {
         <div className="p-6 border-t border-white/[0.06]">
           <button 
             onClick={clearConversation}
-            className="flex w-full items-center justify-center gap-2 text-xs tracking-widest font-medium py-3 rounded-2xl border border-white/[0.08] hover:bg-white/[0.015] active:bg-white/[0.03] transition-colors text-white/70 hover:text-white/90"
+            className="flex w-full items-center justify-center gap-2 text-xs tracking-widest font-medium py-3 rounded-2xl border border-white/[0.08] hover:bg-white/[0.015] active:bg-white/[0.03] transition-colors text-white/70 hover:text-white/90 luxury-card"
           >
             <Trash2 size={14} /> RESET SESSION
           </button>
@@ -450,7 +450,7 @@ export default function VellonCVs() {
             )}
             <button 
               onClick={() => window.location.reload()} 
-              className="flex items-center gap-2 px-5 py-2 rounded-2xl hover:bg-white/[0.03] border border-white/[0.06] text-white/70 hover:text-white text-sm font-medium tracking-wider transition active:bg-white/[0.015]"
+              className="flex items-center gap-2 px-5 py-2 rounded-2xl hover:bg-white/[0.03] border border-white/[0.06] hover:border-[var(--gold-primary)]/30 text-white/70 hover:text-white text-sm font-medium tracking-wider transition active:bg-white/[0.015] luxury-card"
             >
               <Settings size={15} /> PREFERENCES
             </button>
@@ -474,13 +474,13 @@ export default function VellonCVs() {
 
               <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
                 {quickActions.slice(0, 4).map((action, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleQuickAction(action)}
-                    className="px-6 py-4 text-left text-[13.5px] rounded-3xl border border-white/[0.06] hover:border-white/[0.12] bg-white/[0.015] hover:bg-white/[0.03] transition-all active:scale-[0.985] tracking-[-0.1px]"
-                  >
-                    {action}
-                  </button>
+              <button
+                key={i}
+                onClick={() => handleQuickAction(action)}
+                className="w-full text-left text-sm px-3 py-2 rounded-xl bg-[#111113] hover:bg-[#1A1A1D] border border-white/[0.04] hover:border-[var(--gold-primary)]/30 transition-all active:scale-[0.985] luxury-card"
+              >
+                {action}
+              </button>
                 ))}
               </div>
             </div>
@@ -562,13 +562,13 @@ export default function VellonCVs() {
                     ? "Tell me how you’d like to refine your profile…" 
                     : "Describe your goals or upload a resume to begin…"
                 }
-                className="w-full bg-[#0A0A0C] border border-white/[0.08] focus:border-white/20 transition-all rounded-[22px] pl-6 pr-16 py-[17px] text-[15px] placeholder:text-white/40 outline-none tracking-[-0.1px] shadow-inner"
+                className="w-full bg-[#0A0A0C] border border-white/[0.08] focus:border-[var(--gold-primary)] transition-all rounded-[22px] pl-6 pr-16 py-[17px] text-[15px] placeholder:text-white/40 outline-none tracking-[-0.1px] shadow-inner focus-gold"
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-[42px] h-[42px] rounded-[16px] bg-white text-[#050505] flex items-center justify-center disabled:opacity-35 hover:bg-[#F1F1F3] active:bg-white transition-all disabled:hover:bg-white shadow"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-[42px] h-[42px] rounded-[16px] gold-button flex items-center justify-center disabled:opacity-35 shadow-luxury"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={17} />}
               </button>
