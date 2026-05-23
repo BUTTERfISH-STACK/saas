@@ -47,17 +47,27 @@ export default function VellonCVs() {
       const res = await fetch('/api/models');
       const data = await res.json();
       
-      if (data.models?.length > 0) {
-        setModels(data.models);
-        const preferred = data.models.find((m: Model) => 
-          m.name.includes('llama3.1') || m.name.includes('qwen2.5') || m.name.includes('phi')
-        );
-        if (preferred) setSelectedModel(preferred.name);
-        setEngineStatus('online');
-      } else {
-        setEngineStatus('offline');
-        setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
-      }
+        if (data.models?.length > 0) {
+          setModels(data.models);
+          // Prefer fast, free, high-quality models for VellonCVs
+          const preferred = data.models.find((m: Model) => 
+            m.name.includes('llama3.2:3b') || 
+            m.name.includes('llama3.2') || 
+            m.name.includes('qwen2.5:7b') || 
+            m.name.includes('qwen2.5-coder:3b') ||
+            m.name.includes('phi4')
+          );
+          if (preferred) {
+            setSelectedModel(preferred.name);
+          } else {
+            // Fallback to first available model
+            setSelectedModel(data.models[0].name);
+          }
+          setEngineStatus('online');
+        } else {
+          setEngineStatus('offline');
+          setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
+        }
     } catch {
       setEngineStatus('offline');
       setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
