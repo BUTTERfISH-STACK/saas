@@ -364,27 +364,23 @@ export default function VellonCVs() {
 
           {engineStatus !== 'online' && (
             <div className="pl-5 mt-3 space-y-1">
-              {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') ? (
-                <div className="text-[11px] text-rose-400">
-                  This Vercel demo cannot connect to your local Ollama.<br />
-                  Run the app locally with <code>npm run dev</code> + <code>ollama serve</code>.
+              <button 
+                onClick={checkVellonCoreConnection}
+                className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
+              >
+                ↻ Check connection again
+              </button>
+              <a 
+                href="/docs/troubleshooting-vellon-core.md" 
+                target="_blank"
+                className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
+              >
+                → Open troubleshooting guide
+              </a>
+              {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
+                <div className="text-[10px] text-white/50 mt-1">
+                  For Vercel: set OLLAMA_BASE_URL to a public Ollama instance in your Vercel env vars.
                 </div>
-              ) : (
-                <>
-                  <button 
-                    onClick={checkVellonCoreConnection}
-                    className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
-                  >
-                    ↻ Check connection again
-                  </button>
-                  <a 
-                    href="/docs/troubleshooting-vellon-core.md" 
-                    target="_blank"
-                    className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
-                  >
-                    → Open troubleshooting guide
-                  </a>
-                </>
               )}
             </div>
           )}
@@ -516,14 +512,13 @@ export default function VellonCVs() {
            {engineStatus !== 'online' && (
              <div className="max-w-2xl mx-auto mb-6 p-4 rounded-2xl bg-[#1A0F0F] border border-rose-900/50 text-center">
                <div className="text-rose-400 font-medium mb-1">
-                 {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') 
-                   ? 'Vercel Demo: Local AI only works when running locally' 
-                   : 'Vellon Core is offline'}
+                 Vellon Core is offline
                </div>
                <div className="text-sm text-white/60 mb-3">
-                 {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') 
-                   ? 'Deployments on Vercel cannot reach your local Ollama. Run `npm run dev` + `ollama serve` on your machine.'
-                   : 'Make sure `ollama serve` is running in another terminal.'}
+                 Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> is running in another terminal.
+                 {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
+                   <><br />For Vercel deployments, set the <code>OLLAMA_BASE_URL</code> environment variable to a public Ollama instance.</>
+                 )}
                </div>
                <button 
                  onClick={checkVellonCoreConnection}
