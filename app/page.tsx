@@ -40,31 +40,33 @@ export default function VellonCVs() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
-  // Fetch available models
-  useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        const res = await fetch('/api/models');
-        const data = await res.json();
-        
-        if (data.models?.length > 0) {
-          setModels(data.models);
-          const preferred = data.models.find((m: Model) => 
-            m.name.includes('llama3.1') || m.name.includes('qwen2.5') || m.name.includes('phi')
-          );
-          if (preferred) setSelectedModel(preferred.name);
-          setEngineStatus('online');
-        } else {
-          setEngineStatus('offline');
-          setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
-        }
-      } catch {
+  // Reusable connection check (can be called manually)
+  const checkVellonCoreConnection = async () => {
+    setEngineStatus('checking');
+    try {
+      const res = await fetch('/api/models');
+      const data = await res.json();
+      
+      if (data.models?.length > 0) {
+        setModels(data.models);
+        const preferred = data.models.find((m: Model) => 
+          m.name.includes('llama3.1') || m.name.includes('qwen2.5') || m.name.includes('phi')
+        );
+        if (preferred) setSelectedModel(preferred.name);
+        setEngineStatus('online');
+      } else {
         setEngineStatus('offline');
         setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
       }
-    };
+    } catch {
+      setEngineStatus('offline');
+      setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
+    }
+  };
 
-    fetchModels();
+  // Initial check on load
+  useEffect(() => {
+    checkVellonCoreConnection();
   }, []);
 
   // Elegant CV upload handler
@@ -216,7 +218,7 @@ export default function VellonCVs() {
   const getStatusLabel = () => {
     if (engineStatus === 'online') return 'Vellon Intelligence';
     if (engineStatus === 'offline') return 'Core offline';
-    return 'Connecting…';
+    return 'Checking Vellon Core…';
   };
 
   const getStatusColor = () => {
@@ -257,13 +259,21 @@ export default function VellonCVs() {
           <div className="text-[10px] text-white/40 pl-5 mt-px">Private inference • End-to-end encrypted</div>
 
           {engineStatus !== 'online' && (
-            <a 
-              href="/docs/troubleshooting-vellon-core.md" 
-              target="_blank"
-              className="mt-3 inline-flex items-center gap-2 text-[11px] text-amber-400 hover:text-amber-300 pl-5 transition-colors"
-            >
-              → Open troubleshooting guide
-            </a>
+            <div className="pl-5 mt-3 space-y-1">
+              <button 
+                onClick={checkVellonCoreConnection}
+                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition-colors"
+              >
+                ↻ Check connection again
+              </button>
+              <a 
+                href="/docs/troubleshooting-vellon-core.md" 
+                target="_blank"
+                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition-colors"
+              >
+                → Open troubleshooting guide
+              </a>
+            </div>
           )}
         </div>
 
