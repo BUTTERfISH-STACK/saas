@@ -179,7 +179,11 @@ export default function VellonCVs() {
       if (isEngineError) {
         setEngineStatus('offline');
         toast.error('Vellon Core unavailable', {
-          description: 'Please ensure the local AI service is running.',
+          description: 'The local AI service is not responding. See the troubleshooting guide in the sidebar.',
+          action: {
+            label: "Open guide",
+            onClick: () => window.open('/docs/troubleshooting-vellon-core.md', '_blank')
+          }
         });
       } else {
         toast.error('Something went wrong', { description: err.message });
@@ -251,6 +255,16 @@ export default function VellonCVs() {
             <div className="font-medium tracking-wide text-white/90 text-[13px]">{getStatusLabel()}</div>
           </div>
           <div className="text-[10px] text-white/40 pl-5 mt-px">Private inference • End-to-end encrypted</div>
+
+          {engineStatus !== 'online' && (
+            <a 
+              href="/docs/troubleshooting-vellon-core.md" 
+              target="_blank"
+              className="mt-3 inline-flex items-center gap-2 text-[11px] text-amber-400 hover:text-amber-300 pl-5 transition-colors"
+            >
+              → Open troubleshooting guide
+            </a>
+          )}
         </div>
 
         {/* Model Selector - Ultra Premium */}
