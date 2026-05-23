@@ -211,7 +211,6 @@ export default function VellonCVs() {
     }
 
     const chatEndpoint = backendUrl ? `${backendUrl}/chat` : '/api/chat';
-    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
