@@ -333,9 +333,6 @@ export default function VellonCVs() {
               >
                 → Open troubleshooting guide
               </a>
-              <div className="text-[10px] text-white/30 pl-0.5 mt-1">
-                For full agents (Vision + Redo): Start Python backend → <code>cd backend && venv\Scripts\activate && uvicorn main:app --reload</code>
-              </div>
             </div>
           )}
         </div>
