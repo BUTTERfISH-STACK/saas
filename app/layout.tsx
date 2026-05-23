@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VellonCVs — Private AI CV Optimization",
-  description: "Conversational AI for professional CV rewriting and ATS optimization. Powered by Ollama. 100% private, runs locally.",
+  title: "VellonCVs — Confidential Career Intelligence",
+  description: "A private, ultra-premium AI companion for crafting exceptional, ATS-optimized resumes through natural conversation. 100% local and confidential.",
   icons: {
     icon: "/next.svg",
   },

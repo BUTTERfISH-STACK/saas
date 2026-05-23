@@ -32,7 +32,7 @@ Rules you MUST follow:
 - Keep responses concise and professional. Use markdown for lists and emphasis.
 - If the user pastes a job description, help tailor content to it.
 
-You are running fully locally via Ollama. Be helpful and precise.`;
+You run entirely within the Vellon private intelligence layer. Be helpful, precise, and protective of the user’s career data.`;
 
     const ollamaPayload = {
       model,
@@ -54,7 +54,7 @@ You are running fully locally via Ollama. Be helpful and precise.`;
 
     if (!ollamaRes.ok) {
       const errText = await ollamaRes.text();
-      throw new Error(`Ollama error: ${errText}`);
+      throw new Error(`Vellon Core error: ${errText}`);
     }
 
     // Stream NDJSON from Ollama directly to the client (compatible with useChat)
@@ -114,8 +114,8 @@ You are running fully locally via Ollama. Be helpful and precise.`;
     if (error.message?.includes('ECONNREFUSED') || error.message?.includes('fetch failed')) {
       return new Response(
         JSON.stringify({
-          error: 'Ollama is not running',
-          detail: 'Please start Ollama with: ollama serve\nThen pull a model: ollama pull llama3.1:8b',
+          error: 'Vellon Core unavailable',
+          detail: 'The private AI engine is not responding.\nPlease ensure the local service is running.',
         }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );

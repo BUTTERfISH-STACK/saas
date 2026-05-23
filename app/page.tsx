@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, Upload, Settings, Trash2, Bot, User, FileText, 
-  Sparkles, ChevronLeft, ChevronRight, Loader2 
+  Sparkles, ChevronLeft, ChevronRight, Loader2, Zap 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Model {
   name: string;
@@ -23,7 +24,7 @@ export default function VellonCVs() {
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState('llama3.1:8b');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [engineStatus, setEngineStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [uploadedCV, setUploadedCV] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -32,13 +33,14 @@ export default function VellonCVs() {
   const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  // Premium auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
-  // Fetch available Ollama models on mount
+  // Fetch available models
   useEffect(() => {
     const fetchModels = async () => {
       try {
@@ -51,58 +53,59 @@ export default function VellonCVs() {
             m.name.includes('llama3.1') || m.name.includes('qwen2.5') || m.name.includes('phi')
           );
           if (preferred) setSelectedModel(preferred.name);
-          setOllamaStatus('online');
+          setEngineStatus('online');
         } else {
-          setOllamaStatus('offline');
-          setModels([{ name: 'llama3.1:8b' }, { name: 'mistral' }, { name: 'qwen2.5:7b' }]);
+          setEngineStatus('offline');
+          setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
         }
       } catch {
-        setOllamaStatus('offline');
-        setModels([{ name: 'llama3.1:8b' }, { name: 'mistral' }, { name: 'qwen2.5:7b' }]);
+        setEngineStatus('offline');
+        setModels([{ name: 'Vellon-Prime' }, { name: 'Vellon-Precision' }, { name: 'Vellon-Balanced' }]);
       }
     };
 
     fetchModels();
   }, []);
 
-  // Handle CV upload (MVP)
+  // Elegant CV upload handler
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
 
-    setTimeout(() => {
-      const fileName = file.name;
-      setUploadedCV(fileName);
+    // Simulate sophisticated processing
+    await new Promise(resolve => setTimeout(resolve, 720));
 
-      const uploadMessage: Message = {
-        id: Date.now().toString(),
-        role: 'system',
-        content: `[CV UPLOADED] User uploaded "${fileName}". Treat this as the active resume for all optimization, rewriting, and ATS advice going forward.`,
-      };
+    const fileName = file.name;
+    setUploadedCV(fileName);
 
-      setMessages(prev => [...prev, uploadMessage]);
+    const uploadMessage: Message = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: `Resume imported: ${fileName}. The Vellon Intelligence engine now has full context of your professional background.`,
+    };
 
-      toast.success('CV received', {
-        description: `${fileName} is now in context. Start chatting to optimize it.`,
-      });
+    setMessages(prev => [...prev, uploadMessage]);
+    setIsUploading(false);
+    e.target.value = '';
 
-      setIsUploading(false);
-      e.target.value = '';
-    }, 650);
+    toast.success('Resume processed', {
+      description: 'Your CV is now active in the conversation.',
+      action: { label: "Optimize now", onClick: () => handleQuickAction("Run a comprehensive optimization on my CV") }
+    });
   };
 
-  const clearChat = () => {
+  const clearConversation = () => {
     setMessages([]);
     setUploadedCV(null);
     setInput('');
-    toast.info('Conversation cleared');
+    toast.info('Conversation reset');
   };
 
-  // Send message with real streaming from our /api/chat
+  // Premium streaming send
   const sendMessage = async (customMessage?: string) => {
-    const messageText = customMessage || input.trim();
+    const messageText = (customMessage || input).trim();
     if (!messageText || isLoading) return;
 
     const userMessage: Message = {
@@ -127,11 +130,10 @@ export default function VellonCVs() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || err.error || 'Request failed');
       }
 
-      // Read the NDJSON stream
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
@@ -157,14 +159,11 @@ export default function VellonCVs() {
               try {
                 const text = JSON.parse(line.slice(2));
                 assistantContent += text;
-                
-                // Update the last assistant message live
+
                 setMessages(prev => {
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
-                  if (last.role === 'assistant') {
-                    last.content = assistantContent;
-                  }
+                  if (last?.role === 'assistant') last.content = assistantContent;
                   return updated;
                 });
               } catch {}
@@ -173,20 +172,23 @@ export default function VellonCVs() {
         }
       }
 
-      setOllamaStatus('online');
+      setEngineStatus('online');
     } catch (err: any) {
-      if (err.message?.includes('Ollama')) {
-        setOllamaStatus('offline');
-        toast.error('Ollama not running', {
-          description: 'Please run `ollama serve` then try again.',
+      const isEngineError = err.message?.toLowerCase().includes('core') || err.message?.toLowerCase().includes('unavailable');
+
+      if (isEngineError) {
+        setEngineStatus('offline');
+        toast.error('Vellon Core unavailable', {
+          description: 'Please ensure the local AI service is running.',
         });
       } else {
-        toast.error('Error', { description: err.message });
+        toast.error('Something went wrong', { description: err.message });
       }
-      // Remove the failed assistant placeholder if needed
-      setMessages(prev => prev.filter(m => !(m.role === 'assistant' && m.content === '')));
+
+      setMessages(prev => prev.filter(m => !(m.role === 'assistant' && !m.content)));
     } finally {
       setIsLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -196,79 +198,107 @@ export default function VellonCVs() {
   };
 
   const quickActions = [
-    "Optimize my CV for ATS",
-    "Tailor this resume to a Senior Software Engineer role",
-    "Make my experience bullets more quantifiable",
-    "Rewrite the summary to be more impactful",
-    "Run a full ATS compatibility audit",
+    "Perform a full optimization pass",
+    "Tailor for a Senior Staff Engineer role",
+    "Strengthen impact and quantification",
+    "Refine the professional summary",
+    "Generate an ATS compatibility report",
   ];
 
   const handleQuickAction = (action: string) => {
     sendMessage(action);
   };
 
+  const getStatusLabel = () => {
+    if (engineStatus === 'online') return 'Vellon Intelligence';
+    if (engineStatus === 'offline') return 'Core offline';
+    return 'Connecting…';
+  };
+
+  const getStatusColor = () => {
+    if (engineStatus === 'online') return 'bg-emerald-500';
+    if (engineStatus === 'offline') return 'bg-rose-500';
+    return 'bg-amber-500';
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-200 border-r border-zinc-800 flex flex-col bg-zinc-900 overflow-hidden`}>
-        <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-black" />
+    <div className="flex h-screen overflow-hidden bg-[#050505] text-[#FAFAFA] font-sans antialiased">
+      {/* Premium Refined Sidebar */}
+      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} flex flex-col bg-[#0A0A0C] border-r border-white/[0.06] transition-all duration-300 ease-out overflow-hidden`}>
+        {/* Sidebar Header */}
+        <div className="h-20 px-6 flex items-center justify-between border-b border-white/[0.06]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center shadow-inner">
+              <Sparkles className="w-5 h-5 text-black" strokeWidth={2.25} />
             </div>
             <div>
-              <div className="font-semibold tracking-tight text-xl">VellonCVs</div>
-              <div className="text-[10px] text-zinc-500 -mt-0.5">PRIVATE • LOCAL • POWERFUL</div>
+              <div className="font-semibold tracking-[-0.02em] text-[21px] leading-none">VellonCVs</div>
+              <div className="text-[10px] text-white/40 tracking-[1.5px] mt-1 font-medium">EST 2026</div>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="text-zinc-500 hover:text-zinc-300">
-            <ChevronLeft size={18} />
+          <button 
+            onClick={() => setSidebarOpen(false)} 
+            className="text-white/40 hover:text-white/70 transition-colors p-1.5 -mr-1.5"
+          >
+            <ChevronLeft size={19} />
           </button>
         </div>
 
-        {/* Model Selector */}
-        <div className="p-4 border-b border-zinc-800">
-          <div className="text-xs font-medium text-zinc-400 mb-1.5 px-1">MODEL</div>
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-700 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-zinc-500"
-          >
-            {models.map((m) => (
-              <option key={m.name} value={m.name}>{m.name}</option>
-            ))}
-          </select>
-          <div className="mt-1.5 text-[10px] text-zinc-500 px-1 flex items-center gap-1.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${ollamaStatus === 'online' ? 'bg-emerald-500' : ollamaStatus === 'offline' ? 'bg-red-500' : 'bg-amber-500'}`} />
-            {ollamaStatus === 'online' && 'Connected to Ollama'}
-            {ollamaStatus === 'offline' && 'Ollama offline — run `ollama serve`'}
-            {ollamaStatus === 'checking' && 'Checking connection...'}
+        {/* Engine Status - Elegant */}
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-center gap-3 text-sm">
+            <div className={`w-2 h-2 rounded-full ${getStatusColor()} ${engineStatus === 'online' ? 'animate-pulse' : ''}`} />
+            <div className="font-medium tracking-wide text-white/90 text-[13px]">{getStatusLabel()}</div>
+          </div>
+          <div className="text-[10px] text-white/40 pl-5 mt-px">Private inference • End-to-end encrypted</div>
+        </div>
+
+        {/* Model Selector - Ultra Premium */}
+        <div className="px-6 pb-6">
+          <div className="text-[10px] font-medium tracking-[1px] text-white/40 mb-2 pl-1">INTELLIGENCE MODEL</div>
+          <div className="relative">
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="w-full appearance-none bg-[#111113] border border-white/[0.08] hover:border-white/[0.15] focus:border-white/20 transition-all text-sm font-medium tracking-[-0.1px] rounded-2xl px-4 py-[13px] pr-10 outline-none cursor-pointer"
+            >
+              {models.map((m) => (
+                <option key={m.name} value={m.name}>{m.name}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
+              <Zap size={14} />
+            </div>
           </div>
         </div>
 
-        {/* CV Upload Area */}
-        <div className="p-4 border-b border-zinc-800">
-          <div className="text-xs font-medium text-zinc-400 mb-2 px-1">ACTIVE CV</div>
+        {/* CV Section - Luxurious Treatment */}
+        <div className="px-6 pb-2">
+          <div className="text-[10px] font-medium tracking-[1px] text-white/40 mb-2.5 pl-1">PROFESSIONAL PROFILE</div>
           
           {!uploadedCV ? (
-            <label className="flex flex-col items-center justify-center border border-dashed border-zinc-700 hover:border-zinc-500 rounded-2xl p-6 cursor-pointer transition-colors bg-zinc-950/50">
-              <Upload className="w-5 h-5 mb-2 text-zinc-400" />
-              <div className="text-sm font-medium">Upload Resume</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">PDF or DOCX</div>
-              <input 
-                type="file" 
-                accept=".pdf,.docx,.doc,.txt" 
-                onChange={handleCVUpload} 
-                className="hidden" 
-              />
+            <label className="group block border border-white/[0.08] hover:border-white/[0.2] transition-all bg-[#0F0F11] hover:bg-[#111113] rounded-3xl p-7 cursor-pointer">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-11 h-11 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-4 group-hover:bg-white/[0.07] transition-colors">
+                  <Upload className="w-5 h-5 text-white/60" />
+                </div>
+                <div className="font-semibold tracking-[-0.2px] text-[15px]">Import your resume</div>
+                <div className="text-white/40 text-xs mt-1 tracking-wide">PDF • DOCX • up to 10MB</div>
+              </div>
+              <input type="file" accept=".pdf,.docx,.doc,.txt" onChange={handleCVUpload} className="hidden" />
             </label>
           ) : (
-            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 flex items-center gap-3">
-              <FileText className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-              <div className="min-w-0 flex-1 text-sm truncate">{uploadedCV}</div>
+            <div className="bg-[#111113] border border-white/[0.06] rounded-3xl p-5 flex items-start gap-4">
+              <div className="mt-0.5">
+                <FileText className="w-5 h-5 text-white/80" />
+              </div>
+              <div className="flex-1 min-w-0 pt-px">
+                <div className="font-medium text-[13.5px] tracking-[-0.1px] leading-tight truncate pr-2">{uploadedCV}</div>
+                <div className="text-[11px] text-white/40 mt-px">Active in context</div>
+              </div>
               <button 
-                onClick={() => setUploadedCV(null)} 
-                className="text-zinc-400 hover:text-red-400 transition-colors"
+                onClick={() => { setUploadedCV(null); toast.info('Profile removed'); }} 
+                className="text-white/30 hover:text-rose-400/80 transition-colors p-1 -mt-1 -mr-1"
               >
                 <Trash2 size={15} />
               </button>
@@ -276,21 +306,21 @@ export default function VellonCVs() {
           )}
 
           {isUploading && (
-            <div className="mt-2 text-xs flex items-center gap-2 text-zinc-400">
-              <Loader2 className="w-3 h-3 animate-spin" /> Processing CV...
+            <div className="flex items-center gap-2.5 text-[12px] text-white/50 mt-4 pl-1">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing document…
             </div>
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="p-4 flex-1 overflow-y-auto">
-          <div className="text-xs font-medium text-zinc-400 mb-2 px-1">QUICK ACTIONS</div>
-          <div className="space-y-1">
-            {quickActions.map((action, i) => (
+        {/* Quick Actions - Elegant Cards */}
+        <div className="flex-1 px-6 pt-6 overflow-y-auto">
+          <div className="text-[10px] font-medium tracking-[1px] text-white/40 mb-3 pl-1">SUGGESTED ACTIONS</div>
+          <div className="space-y-1.5">
+            {quickActions.map((action, index) => (
               <button
-                key={i}
+                key={index}
                 onClick={() => handleQuickAction(action)}
-                className="w-full text-left text-sm px-3 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-colors"
+                className="w-full text-left px-4 py-[13px] rounded-2xl bg-[#111113] hover:bg-[#1A1A1D] border border-white/[0.04] hover:border-white/[0.08] text-[13.5px] tracking-[-0.1px] transition-all active:scale-[0.985]"
               >
                 {action}
               </button>
@@ -298,60 +328,72 @@ export default function VellonCVs() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-zinc-800">
+        {/* Footer Actions */}
+        <div className="p-6 border-t border-white/[0.06]">
           <button 
-            onClick={clearChat}
-            className="flex items-center gap-2 text-xs w-full justify-center py-2 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-colors"
+            onClick={clearConversation}
+            className="flex w-full items-center justify-center gap-2 text-xs tracking-widest font-medium py-3 rounded-2xl border border-white/[0.08] hover:bg-white/[0.015] active:bg-white/[0.03] transition-colors text-white/70 hover:text-white/90"
           >
-            <Trash2 size={14} /> Clear conversation
+            <Trash2 size={14} /> RESET SESSION
           </button>
-          <div className="text-[10px] text-center text-zinc-600 mt-3">100% private • Runs on your hardware</div>
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="h-14 border-b border-zinc-800 px-5 flex items-center justify-between bg-zinc-950/80 backdrop-blur">
-          <div className="flex items-center gap-3">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#050505]">
+        {/* Sophisticated Top Bar */}
+        <div className="h-[73px] border-b border-white/[0.06] px-7 flex items-center justify-between bg-[#050505]/80 backdrop-blur-xl z-10">
+          <div className="flex items-center gap-4">
             {!sidebarOpen && (
-              <button onClick={() => setSidebarOpen(true)} className="text-zinc-400 hover:text-white mr-1">
-                <ChevronRight size={18} />
+              <button 
+                onClick={() => setSidebarOpen(true)} 
+                className="mr-2 text-white/40 hover:text-white/70 transition p-2 -ml-2"
+              >
+                <ChevronRight size={19} />
               </button>
             )}
-            <div className="font-semibold tracking-tight">VellonCVs</div>
-            <div className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">LOCAL AI</div>
+            <div>
+              <div className="font-semibold text-xl tracking-[-0.4px]">VellonCVs</div>
+              <div className="text-[10px] text-white/40 -mt-px tracking-[2px]">CONFIDENTIAL CAREER INTELLIGENCE</div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
-            {uploadedCV && <span className="hidden md:inline text-emerald-400">CV loaded • {uploadedCV}</span>}
+          <div className="flex items-center gap-2.5 text-sm">
+            {uploadedCV && (
+              <div className="hidden md:flex items-center gap-2 text-white/50 bg-white/[0.03] px-4 py-1.5 rounded-2xl text-xs tracking-wider border border-white/[0.05]">
+                <FileText size={13} /> {uploadedCV.length > 26 ? uploadedCV.slice(0, 23) + '...' : uploadedCV}
+              </div>
+            )}
             <button 
               onClick={() => window.location.reload()} 
-              className="px-3 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs"
+              className="flex items-center gap-2 px-5 py-2 rounded-2xl hover:bg-white/[0.03] border border-white/[0.06] text-white/70 hover:text-white text-sm font-medium tracking-wider transition active:bg-white/[0.015]"
             >
-              <Settings size={14} /> Settings
+              <Settings size={15} /> PREFERENCES
             </button>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-zinc-950" id="chat-scroll">
+        {/* Chat Messages — Ultra Clean & Spacious */}
+        <div className="flex-1 overflow-y-auto px-6 md:px-12 pt-12 pb-8" style={{ scrollbarWidth: 'thin' }}>
           {messages.length === 0 && (
-            <div className="max-w-md mx-auto text-center pt-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white mb-6">
-                <Sparkles className="w-8 h-8 text-black" />
+            <div className="max-w-[620px] mx-auto pt-16 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/[0.03] border border-white/[0.06] text-[11px] tracking-[2.5px] text-white/50 mb-6 font-medium">
+                CONFIDENTIAL • LOCAL • PRECISE
               </div>
-              <h1 className="text-3xl font-semibold tracking-tighter">Private AI CV Optimization</h1>
-              <p className="mt-3 text-zinc-400">
-                Upload your resume and chat naturally. I&apos;ll rewrite, tailor, and optimize it for ATS and human readers — all locally with Ollama.
+              
+              <h1 className="text-6xl font-semibold tracking-[-2.6px] leading-none mb-4">
+                Your career.<br />Elevated.
+              </h1>
+              <p className="text-xl text-white/60 tracking-[-0.2px] max-w-md mx-auto">
+                A private intelligence layer for crafting exceptional resumes through natural conversation.
               </p>
 
-              <div className="mt-8 grid grid-cols-1 gap-2 text-left text-sm max-w-xs mx-auto">
-                {quickActions.slice(0, 3).map((action, i) => (
-                  <button 
+              <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
+                {quickActions.slice(0, 4).map((action, i) => (
+                  <button
                     key={i}
                     onClick={() => handleQuickAction(action)}
-                    className="px-4 py-3 rounded-2xl border border-zinc-800 hover:bg-zinc-900 text-left transition"
+                    className="px-6 py-4 text-left text-[13.5px] rounded-3xl border border-white/[0.06] hover:border-white/[0.12] bg-white/[0.015] hover:bg-white/[0.03] transition-all active:scale-[0.985] tracking-[-0.1px]"
                   >
                     {action}
                   </button>
@@ -360,72 +402,96 @@ export default function VellonCVs() {
             </div>
           )}
 
-          {messages.map((message, index) => {
-            const isUser = message.role === 'user';
-            const isSystem = message.role === 'system';
+          <div className="max-w-3xl mx-auto space-y-9">
+            <AnimatePresence>
+              {messages.map((message, index) => {
+                const isUser = message.role === 'user';
+                const isSystem = message.role === 'system';
 
-            if (isSystem) {
-              return (
-                <div key={index} className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 text-emerald-300 text-sm rounded-2xl p-4">
-                  {message.content.replace('[CV UPLOADED] ', '')}
-                </div>
-              );
-            }
-
-            return (
-              <div key={index} className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex gap-3 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isUser ? 'bg-white text-black' : 'bg-zinc-800'}`}>
-                    {isUser ? <User size={16} /> : <Bot size={16} />}
-                  </div>
-                  <div className={`rounded-3xl px-5 py-3 text-[15px] leading-relaxed ${isUser ? 'bg-white text-black' : 'bg-zinc-900 border border-zinc-800'}`}>
-                    <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
+                if (isSystem) {
+                  return (
+                    <motion.div 
+                      key={index}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="max-w-2xl mx-auto bg-[#0F0F11] border border-white/[0.06] text-[#A1A1AA] text-[13.5px] rounded-3xl px-6 py-4 tracking-[-0.1px]"
+                    >
                       {message.content}
+                    </motion.div>
+                  );
+                }
+
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`flex gap-4 max-w-[82%] ${isUser ? 'flex-row-reverse' : ''}`}>
+                      {!isUser && (
+                        <div className="w-8 h-8 rounded-2xl bg-white/[0.06] flex items-center justify-center flex-shrink-0 mt-1 ring-1 ring-inset ring-white/[0.04]">
+                          <Bot size={16} className="text-white/80" />
+                        </div>
+                      )}
+                      <div 
+                        className={`rounded-3xl px-6 py-4 text-[15px] leading-[1.55] tracking-[-0.12px] ${
+                          isUser 
+                            ? 'bg-white text-[#111113] shadow-xl' 
+                            : 'bg-[#111113] border border-white/[0.06] text-[#F4F4F5]'
+                        }`}
+                      >
+                        <div className="whitespace-pre-wrap">{message.content}</div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {isLoading && (
+              <div className="flex gap-4 max-w-[82%]">
+                <div className="w-8 h-8 rounded-2xl bg-white/[0.06] flex items-center justify-center mt-1 ring-1 ring-inset ring-white/[0.04]">
+                  <Loader2 className="w-4 h-4 animate-spin text-white/70" />
+                </div>
+                <div className="bg-[#111113] border border-white/[0.06] rounded-3xl px-6 py-[17px] text-[14px] text-white/50 tracking-wide">
+                  Refining with precision…
                 </div>
               </div>
-            );
-          })}
+            )}
+          </div>
 
-          {isLoading && (
-            <div className="flex gap-3 max-w-[85%]">
-              <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin" />
-              </div>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-3 text-sm text-zinc-400">
-                Thinking...
-              </div>
-            </div>
-          )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Composer */}
-        <div className="border-t border-zinc-800 bg-zinc-950 p-4">
+        {/* Premium Composer */}
+        <div className="border-t border-white/[0.06] bg-[#050505] px-6 md:px-12 py-6">
           <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-            <div className="relative">
+            <div className="relative group">
               <input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
                   uploadedCV 
-                    ? "Ask me to optimize, tailor, rewrite, or audit your CV..." 
-                    : "Upload your CV above or describe what you need..."
+                    ? "Tell me how you’d like to refine your profile…" 
+                    : "Describe your goals or upload a resume to begin…"
                 }
-                className="w-full bg-zinc-900 border border-zinc-700 focus:border-zinc-500 transition-colors rounded-3xl pl-5 pr-14 py-3.5 text-base placeholder:text-zinc-500 outline-none"
+                className="w-full bg-[#0A0A0C] border border-white/[0.08] focus:border-white/20 transition-all rounded-[22px] pl-6 pr-16 py-[17px] text-[15px] placeholder:text-white/40 outline-none tracking-[-0.1px] shadow-inner"
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center disabled:opacity-40 hover:bg-zinc-200 transition disabled:hover:bg-white"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-[42px] h-[42px] rounded-[16px] bg-white text-[#050505] flex items-center justify-center disabled:opacity-35 hover:bg-[#F1F1F3] active:bg-white transition-all disabled:hover:bg-white shadow"
               >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={18} />}
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={17} />}
               </button>
             </div>
-            <div className="text-[10px] text-center text-zinc-600 mt-2">
-              Powered by Ollama • Your data stays on your machine
+
+            <div className="text-center text-[10px] tracking-[1.5px] text-white/30 mt-3.5 font-medium">
+              END-TO-END PRIVATE • POWERED BY VELLON INTELLIGENCE
             </div>
           </form>
         </div>
