@@ -40,11 +40,17 @@ export default function VellonCVs() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 
+    (typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+      ? 'http://localhost:8000' 
+      : undefined);
+
   // Reusable connection check (returns true if online)
   const checkVellonCoreConnection = async (): Promise<boolean> => {
     setEngineStatus('checking');
+    const modelsEndpoint = backendUrl ? `${backendUrl}/models` : '/api/models';
     try {
-      const res = await fetch('/api/models');
+      const res = await fetch(modelsEndpoint);
       const data = await res.json();
        
         if (data.models?.length > 0) {
@@ -198,10 +204,13 @@ export default function VellonCVs() {
       const isNowOnline = await checkVellonCoreConnection();
       if (!isNowOnline) {
         toast.error('Still offline', {
-          description: 'Please make sure "ollama serve" is running in another terminal, then try again.'
+          description: 'Please make sure "ollama serve" is running, then try again.'
         });
         return;
       }
+    }
+
+    const chatEndpoint = backendUrl ? `${backendUrl}/chat` : '/api/chat';
     }
 
     const userMessage: Message = {
@@ -216,7 +225,7 @@ export default function VellonCVs() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(chatEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

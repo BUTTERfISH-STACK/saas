@@ -1,10 +1,12 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from backend.agents.orchestrator import AgentOrchestrator
 from backend.schemas import TaskState, AgentResponse, VisionRequest
 import tempfile
 import os
 from typing import Optional
+import json
 
 app = FastAPI(
     title="Vellon Core - Offline Agent Orchestrator",
@@ -123,6 +125,37 @@ async def pull_ollama_model(model: str = Form(...)):
         return result
     else:
         return {"success": False, "error": result.get("error", "Unknown error pulling model")}
+
+@app.post("/chat")
+async def chat(request: Request):
+    """
+    Streaming chat endpoint that connects to local Ollama via the FastAPI core.
+    This allows the Vercel frontend (or any frontend) to use the local Ollama models
+    by calling this public FastAPI endpoint.
+    """
+    body = await request.json()
+    messages = body.get("messages", [])
+    model = body.get("model", "llama3.2:3b")
+
+    async def stream_response():
+        try:
+            # Use the ollama client with stream
+            response = orchestrator.ollama.client.chat(
+                model=model,
+                messages=messages,
+                stream=True
+            )
+            for chunk in response:
+                if "message" in chunk and "content" in chunk["message"]:
+                    content = chunk["message"]["content"]
+                    if content:
+                        yield f"0:{json.dumps(content)}\n"
+            yield 'd:{"finishReason":"stop"}\n'
+        except Exception as e:
+            yield f'0:{json.dumps(f"Error: {str(e)}")}\n'
+            yield 'd:{"finishReason":"error"}\n'
+
+    return StreamingResponse(stream_response(), media_type="text/plain")
 
 if __name__ == "__main__":
     import uvicorn
