@@ -121,8 +121,45 @@ After pulling, refresh the VellonCVs page — the model selector should now show
 1. Go back to **http://localhost:11434/api/tags** in your browser.
 2. You should now see your pulled models listed.
 3. Refresh the VellonCVs application (http://localhost:3000).
-4. The status indicator in the sidebar should show **“Vellon Intelligence”** with a green dot.
+4. The status indicator in the sidebar should show **“Vellon Intelligence”** (green dot).
 5. Try sending a simple message in the chat.
+
+---
+
+## Running the Full Agentic System (Vision + Corrective/Redo Agents)
+
+The advanced architecture (Orchestrator + CV Vision Agent + Corrective Redo Agent) requires the Python backend.
+
+### Start the Vellon Core Agent Orchestrator
+
+```powershell
+# In a new terminal
+cd backend
+.\venv\Scripts\Activate.ps1     # Windows
+# or source venv/bin/activate   # Git Bash / macOS / Linux
+
+uvicorn main:app --reload --port 8000
+```
+
+You should see:
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+```
+
+### Test the Agents
+
+- Visit http://localhost:8000/docs for interactive API docs (Swagger)
+- Or use the new **"Run Full Agent Pipeline"** button in the VellonCVs sidebar / quick actions after uploading a resume (especially images/scans for the Vision Agent)
+
+### Required Models for Full Experience
+
+```powershell
+ollama pull llava:13b          # or minicpm-v for Vision Agent
+ollama pull phi4:14b           # Fast critique model for Redo Agent
+ollama pull llama3.1:8b        # Main reasoning model
+```
+
+Once the Python backend is running, the "Core offline" status can be bypassed for advanced tasks by using the orchestrator endpoints directly.
 
 ---
 

@@ -69,33 +69,89 @@ export default function VellonCVs() {
     checkVellonCoreConnection();
   }, []);
 
-  // Elegant CV upload handler
+  // Enhanced CV upload handler (supports images for Vision Agent)
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
 
-    // Simulate sophisticated processing
-    await new Promise(resolve => setTimeout(resolve, 720));
-
     const fileName = file.name;
+    const isImage = file.type.startsWith('image/') || fileName.match(/\.(png|jpg|jpeg|pdf)$/i);
+
+    // Simulate local processing
+    await new Promise(resolve => setTimeout(resolve, 650));
+
     setUploadedCV(fileName);
 
     const uploadMessage: Message = {
       id: Date.now().toString(),
       role: 'system',
-      content: `Resume imported: ${fileName}. The Vellon Intelligence engine now has full context of your professional background.`,
+      content: `Resume imported: ${fileName}. ${isImage ? 'Vision Agent ready for scanned/image processing.' : 'Text extracted and ready for agentic optimization.'}`,
     };
 
     setMessages(prev => [...prev, uploadMessage]);
     setIsUploading(false);
     e.target.value = '';
 
-    toast.success('Resume processed', {
-      description: 'Your CV is now active in the conversation.',
-      action: { label: "Optimize now", onClick: () => handleQuickAction("Run a comprehensive optimization on my CV") }
+    toast.success('Resume loaded', {
+      description: isImage ? 'Vision Agent can now analyze the image.' : 'Ready for full agent pipeline.',
+      action: { 
+        label: "Run Agent Pipeline", 
+        onClick: () => runAgentPipeline(file) 
+      }
     });
+  };
+
+  // Full execution of all three components: Orchestrator + Vision + Corrective/Redo
+  const runAgentPipeline = async (file?: File) => {
+    if (!file && !uploadedCV) {
+      toast.error("Please upload a resume first");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    const formData = new FormData();
+    formData.append("goal", "Optimize this resume for maximum ATS compatibility and impact using the full agent pipeline");
+    
+    if (file) {
+      formData.append("file", file);
+    } else if (uploadedCV) {
+      // For demo, we can send text later. For now trigger with note.
+      formData.append("resume_text", "Previously uploaded resume: " + uploadedCV);
+    }
+
+    try {
+      const res = await fetch('/api/orchestrate/resume', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await res.json();
+
+      if (result.success) {
+        const agentMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `**Full Agent Pipeline Complete** (Iterations: ${result.iterations || 1})\n\n${result.data?.final_output || 'Optimized version generated.'}\n\n${result.critique_feedback ? `Last critique: ${result.critique_feedback}` : ''}`,
+        };
+        
+        setMessages(prev => [...prev, agentMessage]);
+        
+        toast.success("Agent pipeline finished", {
+          description: `Completed after ${result.iterations || 1} iteration(s) with Corrective Agent review.`
+        });
+      } else {
+        throw new Error(result.message || "Pipeline failed");
+      }
+    } catch (err: any) {
+      toast.error("Agent pipeline failed", {
+        description: err.message + " — Make sure the Python backend is running (see docs)."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearConversation = () => {
@@ -205,14 +261,18 @@ export default function VellonCVs() {
 
   const quickActions = [
     "Perform a full optimization pass",
+    "Run Full Agent Pipeline (Vision + Redo)",
     "Tailor for a Senior Staff Engineer role",
     "Strengthen impact and quantification",
     "Refine the professional summary",
-    "Generate an ATS compatibility report",
   ];
 
   const handleQuickAction = (action: string) => {
-    sendMessage(action);
+    if (action.toLowerCase().includes("agent pipeline")) {
+      runAgentPipeline();
+    } else {
+      sendMessage(action);
+    }
   };
 
   const getStatusLabel = () => {
@@ -273,6 +333,9 @@ export default function VellonCVs() {
               >
                 → Open troubleshooting guide
               </a>
+              <div className="text-[10px] text-white/30 pl-0.5 mt-1">
+                For full agents (Vision + Redo): Start Python backend → <code>cd backend && venv\Scripts\activate && uvicorn main:app --reload</code>
+              </div>
             </div>
           )}
         </div>

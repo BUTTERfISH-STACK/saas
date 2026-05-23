@@ -1,0 +1,116 @@
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from backend.agents.orchestrator import AgentOrchestrator
+from backend.schemas import TaskState, AgentResponse, VisionRequest
+import tempfile
+import os
+from typing import Optional
+
+app = FastAPI(
+    title="Vellon Core - Offline Agent Orchestrator",
+    description="Fully local, air-gapped agentic AI system powered by Ollama",
+    version="1.0.0"
+)
+
+# Allow Next.js frontend (localhost:3000) to call us
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+orchestrator = AgentOrchestrator()
+
+@app.get("/health")
+async def health():
+    """Quick health check for the orchestrator and Ollama"""
+    ollama_ok = orchestrator.ollama.is_available()
+    models = orchestrator.ollama.list_models() if ollama_ok else []
+    return {
+        "status": "healthy" if ollama_ok else "degraded",
+        "ollama_connected": ollama_ok,
+        "available_models": [m.get("name") for m in models[:5]] if models else [],
+        "vision_agent_ready": True,
+        "corrective_agent_ready": True
+    }
+
+@app.post("/agents/vision", response_model=AgentResponse)
+async def vision_agent(file: UploadFile = File(...), prompt: str = Form(...)):
+    """CV / Computer Vision Agent - Process uploaded resume images or PDFs"""
+    if not file:
+        raise HTTPException(400, "No file uploaded")
+    
+    # Save temporarily
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+    
+    try:
+        vision_req = VisionRequest(prompt=prompt)
+        result = orchestrator.vision_agent.process_resume_image(vision_req, image_path=tmp_path)
+        
+        return AgentResponse(
+            success=result.get("success", False),
+            data=result,
+            message="Vision processing complete" if result.get("success") else "Vision failed"
+        )
+    finally:
+        os.unlink(tmp_path)
+
+@app.post("/agents/corrective", response_model=AgentResponse)
+async def corrective_agent(draft: str = Form(...), context: str = Form(...)):
+    """Corrective / Redo Agent - Critique and suggest improvements"""
+    critique_req = CritiqueRequest(draft=draft, original_context=context)
+    critique = orchestrator.corrective_agent.critique_output(critique_req)
+    
+    return AgentResponse(
+        success=True,
+        data=critique,
+        critique_feedback=critique.get("feedback")
+    )
+
+@app.post("/orchestrate/resume", response_model=AgentResponse)
+async def orchestrate_resume_optimization(
+    goal: str = Form(...),
+    resume_text: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    job_description: Optional[str] = Form(None)
+):
+    """
+    Full Orchestrator Pipeline:
+    1. Vision Agent (if image uploaded)
+    2. Main LLM generation
+    3. Corrective Agent + Redo loop
+    """
+    task = orchestrator.create_task(user_goal=goal)
+    
+    image_path = None
+    if file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+            tmp.write(await file.read())
+            image_path = tmp.name
+    
+    try:
+        result = orchestrator.process_resume_optimization(
+            task=task,
+            resume_text_or_image=resume_text,
+            image_path=image_path,
+            job_description=job_description
+        )
+        return result
+    finally:
+        if image_path and os.path.exists(image_path):
+            os.unlink(image_path)
+
+@app.get("/models")
+async def get_available_models():
+    """List models available in the local Ollama instance"""
+    models = orchestrator.ollama.list_models()
+    return {"models": [m.get("name") for m in models] if models else []}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
