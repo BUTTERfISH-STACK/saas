@@ -63,14 +63,16 @@ export default function VellonCVs() {
        
         if (data.models?.length > 0) {
           setModels(data.models);
-          // Prefer fast, free, high-quality models for VellonCVs
-          const preferred = data.models.find((m: Model) => 
-            m.name.includes('llama3.2:3b') || 
-            m.name.includes('llama3.2') || 
-            m.name.includes('qwen2.5:7b') || 
-            m.name.includes('qwen2.5-coder:3b') ||
-            m.name.includes('phi4')
-          );
+           // Prefer fast, free, high-quality models (works for both local Ollama and free Groq cloud)
+           const preferred = data.models.find((m: Model) => 
+             m.name.includes('llama3.2:3b') || 
+             m.name.includes('llama3.2') || 
+             m.name.includes('llama-3.1-8b') ||
+             m.name.includes('llama3-8b') ||
+             m.name.includes('qwen2.5:7b') || 
+             m.name.includes('qwen2.5-coder:3b') ||
+             m.name.includes('phi4')
+           );
           if (preferred) {
             setSelectedModel(preferred.name);
           } else {

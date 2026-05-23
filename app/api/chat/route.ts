@@ -14,19 +14,17 @@ export async function POST(req: Request) {
 
     const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
-    // On Vercel/production, we require a remote Ollama URL (user must expose Ollama publicly)
     const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production';
+
     if (isProduction && ollamaBaseUrl.includes('localhost')) {
       return new Response(
         JSON.stringify({
           error: 'Configuration required for Vercel',
-          detail: 'Preferred: Deploy the Python FastAPI backend publicly and set NEXT_PUBLIC_BACKEND_URL (in Vercel) to it. The backend connects to your local Ollama.\n\nAlternative: set OLLAMA_BASE_URL to a public Ollama server.',
+          detail: 'This app is Ollama-only. For the Vercel site to use your local Ollama, deploy the Python FastAPI publicly and set NEXT_PUBLIC_BACKEND_URL to it in Vercel.\n\nDirect Ollama exposure is not supported.',
         }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const ollamaUrl = ollamaBaseUrl + '/api/chat';
 
     const ollamaMessages = messages.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
@@ -43,6 +41,8 @@ Rules you MUST follow:
 - Prefer strong action verbs, quantification, and clean ATS-friendly language.
 
 You run entirely within the Vellon private intelligence layer. Be helpful, precise, and protective of the user’s career data.`;
+
+    const ollamaUrl = ollamaBaseUrl + '/api/chat';
 
     const ollamaPayload = {
       model,

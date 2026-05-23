@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json(
       {
         models: [],
-        error: 'Vercel: Set NEXT_PUBLIC_BACKEND_URL to your public FastAPI backend (recommended). Or set OLLAMA_BASE_URL to a public Ollama instance.',
+        error: 'Ollama-only app. For Vercel to use your local Ollama, set NEXT_PUBLIC_BACKEND_URL to your public FastAPI instance.',
       },
       { status: 503 }
     );
