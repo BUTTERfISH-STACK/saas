@@ -235,22 +235,28 @@ export default function VellonCVs() {
       const isEngineError = err.message?.toLowerCase().includes('core') || err.message?.toLowerCase().includes('unavailable');
 
       if (isEngineError) {
+        // Automatically re-check connection (user may have just started Ollama)
         setEngineStatus('offline');
-        toast.error('Vellon Core unavailable', {
-          description: 'The local AI service is not responding. See the troubleshooting guide in the sidebar.',
-          action: {
-            label: "Open guide",
-            onClick: () => window.open('/docs/troubleshooting-vellon-core.md', '_blank')
-          }
-        });
+        await checkVellonCoreConnection();
+
+        // If still offline after re-check, show helpful message
+        if (engineStatus !== 'online') {
+          toast.error('Vellon Core unavailable', {
+            description: 'The local AI service is not responding. Click "↻ Check connection again" in the sidebar or start Ollama.',
+            action: {
+              label: "Open guide",
+              onClick: () => window.open('/docs/troubleshooting-vellon-core.md', '_blank')
+            }
+          });
+        }
       } else {
         toast.error('Something went wrong', { description: err.message });
       }
 
+      // Remove the failed assistant placeholder if needed
       setMessages(prev => prev.filter(m => !(m.role === 'assistant' && !m.content)));
     } finally {
       setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
