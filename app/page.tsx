@@ -207,7 +207,7 @@ export default function VellonCVs() {
       const isNowOnline = await checkVellonCoreConnection();
       if (!isNowOnline) {
         toast.error('Still offline', {
-          description: 'Please make sure "ollama serve" is running, then try again.'
+          description: 'Run ollama serve + Python backend (npm run agents). For Vercel use NEXT_PUBLIC_BACKEND_URL.'
         });
         return;
       }
@@ -291,7 +291,7 @@ export default function VellonCVs() {
         // Only show error if still offline after re-check
         if (engineStatus !== 'online') {
           toast.error('Vellon Core unavailable', {
-            description: 'Still offline. Make sure "ollama serve" is running in another terminal, then click the retry button in the sidebar.',
+            description: 'Run ollama serve + backend. For Vercel: configure NEXT_PUBLIC_BACKEND_URL to your FastAPI host.',
             action: {
               label: "Retry now",
               onClick: () => checkVellonCoreConnection()
@@ -390,7 +390,7 @@ export default function VellonCVs() {
               </a>
               {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
                 <div className="text-[10px] text-white/50 mt-1">
-                  For Vercel: set OLLAMA_BASE_URL to a public Ollama instance in your Vercel env vars.
+                  For Vercel: set NEXT_PUBLIC_BACKEND_URL to your public FastAPI (connects to local Ollama via core).
                 </div>
               )}
             </div>
@@ -525,12 +525,12 @@ export default function VellonCVs() {
                <div className="text-rose-400 font-medium mb-1">
                  Vellon Core is offline
                </div>
-               <div className="text-sm text-white/60 mb-3">
-                 Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> is running in another terminal.
-                 {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
-                   <><br />For Vercel deployments, set the <code>OLLAMA_BASE_URL</code> environment variable to a public Ollama instance.</>
-                 )}
-               </div>
+                <div className="text-sm text-white/60 mb-3">
+                  Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> + the Python backend are running.
+                  {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
+                    <><br />For Vercel: set <code>NEXT_PUBLIC_BACKEND_URL</code> to your public FastAPI instance (recommended over direct Ollama).</>
+                  )}
+                </div>
                <button 
                  onClick={checkVellonCoreConnection}
                  className="px-4 py-2 text-sm rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition"

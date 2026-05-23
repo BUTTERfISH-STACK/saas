@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       return new Response(
         JSON.stringify({
           error: 'Configuration required for Vercel',
-          detail: 'The Vercel deployment requires OLLAMA_BASE_URL to be set to a publicly accessible Ollama server (e.g. running on a VPS). Localhost will never work from Vercel.\n\nSee docs for how to expose your local models.',
+          detail: 'Preferred: Deploy the Python FastAPI backend publicly and set NEXT_PUBLIC_BACKEND_URL (in Vercel) to it. The backend connects to your local Ollama.\n\nAlternative: set OLLAMA_BASE_URL to a public Ollama server.',
         }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );

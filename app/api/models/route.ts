@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json(
       {
         models: [],
-        error: 'Vercel deployment requires OLLAMA_BASE_URL set to a public Ollama server running your downloaded models (e.g. llama3.2:3b).',
+        error: 'Vercel: Set NEXT_PUBLIC_BACKEND_URL to your public FastAPI backend (recommended). Or set OLLAMA_BASE_URL to a public Ollama instance.',
       },
       { status: 503 }
     );
