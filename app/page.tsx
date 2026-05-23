@@ -32,6 +32,14 @@ export default function VellonCVs() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [customBackendUrl, setCustomBackendUrl] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('vellon_backend_url');
+    }
+    return null;
+  });
+  const [showSettings, setShowSettings] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +48,7 @@ export default function VellonCVs() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 
+  const backendUrl = customBackendUrl || process.env.NEXT_PUBLIC_BACKEND_URL || 
     (typeof window !== 'undefined' && window.location.hostname === 'localhost' 
       ? 'http://localhost:8000' 
       : undefined);
@@ -509,7 +517,7 @@ export default function VellonCVs() {
               </div>
             )}
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={() => setShowSettings(true)} 
               className="flex items-center gap-2 px-5 py-2 rounded-2xl hover:bg-white/[0.03] border border-white/[0.06] hover:border-[var(--gold-primary)]/30 text-white/70 hover:text-white text-sm font-medium tracking-wider transition active:bg-white/[0.015] luxury-card"
             >
               <Settings size={15} /> PREFERENCES
@@ -663,6 +671,74 @@ export default function VellonCVs() {
           </form>
         </div>
       </div>
+
+      {/* Settings Modal — allows connecting the Vercel site to your public FastAPI + local Ollama */}
+      {showSettings && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
+          onClick={() => setShowSettings(false)}
+        >
+          <div 
+            className="bg-[#0A0A0C] border border-white/[0.08] rounded-3xl w-full max-w-md p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-xl font-semibold tracking-[-0.5px]">Vellon Preferences</div>
+              <button onClick={() => setShowSettings(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <div className="text-[11px] uppercase tracking-[1.5px] text-white/50 mb-2">Backend Connection (FastAPI Core)</div>
+                <input
+                  type="text"
+                  value={customBackendUrl || ''}
+                  onChange={(e) => setCustomBackendUrl(e.target.value.trim() || null)}
+                  placeholder="https://your-public-fastapi.example.com"
+                  className="w-full bg-[#111113] border border-white/[0.1] focus:border-[var(--gold-primary)]/60 rounded-2xl px-5 py-3.5 text-sm placeholder:text-white/30 outline-none"
+                />
+                <div className="text-[11px] text-white/40 mt-2 leading-snug">
+                  Paste the public URL of your FastAPI backend here.<br />
+                  The site will immediately use it to reach your local Ollama (llama3.2:3b).<br />
+                  Saved in this browser only.
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    if (customBackendUrl) {
+                      localStorage.setItem('vellon_backend_url', customBackendUrl);
+                    } else {
+                      localStorage.removeItem('vellon_backend_url');
+                    }
+                    setShowSettings(false);
+                    checkVellonCoreConnection();
+                  }}
+                  className="flex-1 py-3.5 rounded-2xl bg-white text-[#111113] font-medium text-sm tracking-wider active:scale-[0.985] transition"
+                >
+                  SAVE &amp; RECONNECT
+                </button>
+                <button
+                  onClick={() => {
+                    setCustomBackendUrl(null);
+                    localStorage.removeItem('vellon_backend_url');
+                    setShowSettings(false);
+                    checkVellonCoreConnection();
+                  }}
+                  className="flex-1 py-3.5 rounded-2xl border border-white/20 hover:bg-white/5 text-sm tracking-wider transition"
+                >
+                  CLEAR (USE DEFAULT)
+                </button>
+              </div>
+
+              <div className="text-[10px] text-center text-white/30">
+                For local dev it defaults to http://localhost:8000 automatically.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
