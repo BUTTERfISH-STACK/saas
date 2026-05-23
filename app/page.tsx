@@ -156,7 +156,10 @@ export default function VellonCVs() {
     }
 
     try {
-      const res = await fetch('/api/orchestrate/resume', {
+      const orchestrateEndpoint = backendUrl 
+        ? `${backendUrl}/orchestrate/resume` 
+        : '/api/orchestrate/resume';
+      const res = await fetch(orchestrateEndpoint, {
         method: 'POST',
         body: formData,
       });

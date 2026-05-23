@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from backend.agents.orchestrator import AgentOrchestrator
-from backend.schemas import TaskState, AgentResponse, VisionRequest
+from backend.schemas import TaskState, AgentResponse, VisionRequest, CritiqueRequest
 import tempfile
 import os
 from typing import Optional
@@ -14,10 +14,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Allow Next.js frontend (localhost:3000) to call us
+# Allow frontend origins (configurable for Vercel + local FastAPI use)
+# Set ALLOWED_ORIGINS env (comma-separated) e.g. "https://yourapp.vercel.app,http://localhost:3000"
+# Use "*" to allow all (only if you control the exposure)
+allowed_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000"
+).split(",")
+allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allowed_origins if "*" not in allowed_origins else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,14 +1,15 @@
 from backend.ollama_client import OllamaClient
 from backend.schemas import CritiqueRequest
 from typing import Dict, Any
+import os
 
 class CorrectiveAgent:
     """Redo / Corrective Agent for iterative task refinement and self-critique"""
     
     def __init__(self, ollama_client: OllamaClient):
         self.ollama = ollama_client
-        # Fast model for critique (low latency)
-        self.critique_model = "phi4:14b"  # or "qwen2.5:7b", "gemma2:9b"
+        # Fast model for critique (low latency) - default to lightweight llama3.2:3b so it works with minimal models
+        self.critique_model = os.getenv("CRITIQUE_MODEL", "llama3.2:3b")
     
     def critique_output(self, request: CritiqueRequest) -> Dict[str, Any]:
         """Evaluate a draft and decide if redo is needed"""

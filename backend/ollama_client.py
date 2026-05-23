@@ -1,11 +1,14 @@
 import ollama
+import os
 from typing import Optional, Dict, Any, List
 import base64
 from io import BytesIO
 from PIL import Image
 
 class OllamaClient:
-    def __init__(self, host: str = "http://localhost:11434"):
+    def __init__(self, host: str = None):
+        if host is None:
+            host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
         self.client = ollama.Client(host=host)
     
     def chat(self, model: str, messages: List[Dict], stream: bool = False, **kwargs) -> Any:
