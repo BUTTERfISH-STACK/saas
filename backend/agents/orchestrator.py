@@ -12,7 +12,7 @@ class AgentOrchestrator:
         self.ollama = OllamaClient()
         self.vision_agent = VisionAgent(self.ollama)
         self.corrective_agent = CorrectiveAgent(self.ollama)
-        self.main_model = "llama3.1:8b"  # Primary reasoning model for VellonCVs tasks
+        self.main_model = "llama3.2:3b"  # Fast, free, lightweight open model for VellonCVs
     
     def create_task(self, user_goal: str, original_input: Optional[dict] = None) -> TaskState:
         return TaskState(

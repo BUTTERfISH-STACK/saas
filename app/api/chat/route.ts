@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const DEFAULT_MODEL = 'llama3.1:8b';
+const DEFAULT_MODEL = 'llama3.2:3b';
 
 const chatRequestSchema = z.object({
   messages: z.array(z.any()),

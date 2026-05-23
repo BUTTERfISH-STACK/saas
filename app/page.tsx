@@ -22,7 +22,7 @@ interface Message {
 
 export default function VellonCVs() {
   const [models, setModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState('llama3.1:8b');
+  const [selectedModel, setSelectedModel] = useState('llama3.2:3b');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [engineStatus, setEngineStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [uploadedCV, setUploadedCV] = useState<string | null>(null);
