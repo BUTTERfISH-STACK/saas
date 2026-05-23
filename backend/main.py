@@ -111,6 +111,19 @@ async def get_available_models():
     models = orchestrator.ollama.list_models()
     return {"models": [m.get("name") for m in models] if models else []}
 
+@app.post("/models/pull")
+async def pull_ollama_model(model: str = Form(...)):
+    """
+    Pull (download) a free open-source Ollama model via the FastAPI core.
+    This allows managing local Ollama models through the Vellon Core.
+    Example: model = "llama3.2:3b"
+    """
+    result = orchestrator.ollama.pull_model(model)
+    if result.get("success"):
+        return result
+    else:
+        return {"success": False, "error": result.get("error", "Unknown error pulling model")}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

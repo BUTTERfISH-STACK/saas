@@ -12,9 +12,22 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { messages, model = DEFAULT_MODEL } = chatRequestSchema.parse(body);
 
-    const ollamaUrl = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434') + '/api/chat';
+    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
-    // Convert Vercel AI SDK message format to Ollama format
+    // On Vercel/production, we require a remote Ollama URL (user must expose Ollama publicly)
+    const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production';
+    if (isProduction && ollamaBaseUrl.includes('localhost')) {
+      return new Response(
+        JSON.stringify({
+          error: 'Configuration required for Vercel',
+          detail: 'The Vercel deployment requires OLLAMA_BASE_URL to be set to a publicly accessible Ollama server (e.g. running on a VPS). Localhost will never work from Vercel.\n\nSee docs for how to expose your local models.',
+        }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const ollamaUrl = ollamaBaseUrl + '/api/chat';
+
     const ollamaMessages = messages.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content,
@@ -28,9 +41,6 @@ Rules you MUST follow:
 - Only use information the user has provided in the conversation or uploaded CV.
 - When the user has not uploaded a CV yet, ask for it or guide them.
 - Prefer strong action verbs, quantification, and clean ATS-friendly language.
-- When asked to optimize, propose changes clearly and offer to apply them.
-- Keep responses concise and professional. Use markdown for lists and emphasis.
-- If the user pastes a job description, help tailor content to it.
 
 You run entirely within the Vellon private intelligence layer. Be helpful, precise, and protective of the user’s career data.`;
 
@@ -57,9 +67,7 @@ You run entirely within the Vellon private intelligence layer. Be helpful, preci
       throw new Error(`Vellon Core error: ${errText}`);
     }
 
-    // Stream NDJSON from Ollama directly to the client (compatible with useChat)
     const encoder = new TextEncoder();
-
     const stream = new ReadableStream({
       async start(controller) {
         const reader = ollamaRes.body?.getReader();
@@ -75,7 +83,7 @@ You run entirely within the Vellon private intelligence layer. Be helpful, preci
           const { done, value } = await reader.read();
           if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value);
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
 
@@ -85,16 +93,12 @@ You run entirely within the Vellon private intelligence layer. Be helpful, preci
             try {
               const data = JSON.parse(line);
               if (data.message?.content) {
-                // Format exactly as Vercel AI SDK data stream expects for useChat
-                const chunk = `0:${JSON.stringify(data.message.content)}\n`;
-                controller.enqueue(encoder.encode(chunk));
+                controller.enqueue(encoder.encode(`0:${JSON.stringify(data.message.content)}\n`));
               }
               if (data.done) {
                 controller.enqueue(encoder.encode('d:{"finishReason":"stop"}\n'));
               }
-            } catch {
-              // ignore non-JSON lines
-            }
+            } catch {}
           }
         }
 

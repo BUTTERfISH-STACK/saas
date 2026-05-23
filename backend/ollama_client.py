@@ -45,3 +45,12 @@ class OllamaClient:
             return True
         except:
             return False
+
+    def pull_model(self, model_name: str) -> Dict[str, Any]:
+        """Pull a model from the Ollama registry (downloads it locally)"""
+        try:
+            # The ollama library's pull returns a generator or dict in newer versions
+            response = self.client.pull(model_name)
+            return {"success": True, "message": f"Model {model_name} pulled successfully", "details": response}
+        except Exception as e:
+            return {"success": False, "error": str(e)}

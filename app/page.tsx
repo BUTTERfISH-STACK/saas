@@ -364,19 +364,28 @@ export default function VellonCVs() {
 
           {engineStatus !== 'online' && (
             <div className="pl-5 mt-3 space-y-1">
-              <button 
-                onClick={checkVellonCoreConnection}
-                className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
-              >
-                ↻ Check connection again
-              </button>
-              <a 
-                href="/docs/troubleshooting-vellon-core.md" 
-                target="_blank"
-                className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
-              >
-                → Open troubleshooting guide
-              </a>
+              {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') ? (
+                <div className="text-[11px] text-rose-400">
+                  This Vercel demo cannot connect to your local Ollama.<br />
+                  Run the app locally with <code>npm run dev</code> + <code>ollama serve</code>.
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={checkVellonCoreConnection}
+                    className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
+                  >
+                    ↻ Check connection again
+                  </button>
+                  <a 
+                    href="/docs/troubleshooting-vellon-core.md" 
+                    target="_blank"
+                    className="text-[11px] sidebar-gold flex items-center gap-1.5 transition-colors"
+                  >
+                    → Open troubleshooting guide
+                  </a>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -504,20 +513,26 @@ export default function VellonCVs() {
         {/* Chat Messages — Ultra Clean & Spacious */}
         <div className="flex-1 overflow-y-auto px-6 md:px-12 pt-12 pb-8" style={{ scrollbarWidth: 'thin' }}>
           {/* Clear reconnect banner when core is offline */}
-          {engineStatus !== 'online' && (
-            <div className="max-w-2xl mx-auto mb-6 p-4 rounded-2xl bg-[#1A0F0F] border border-rose-900/50 text-center">
-              <div className="text-rose-400 font-medium mb-1">Vellon Core is offline</div>
-              <div className="text-sm text-white/60 mb-3">
-                Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> is running in another terminal.
-              </div>
-              <button 
-                onClick={checkVellonCoreConnection}
-                className="px-4 py-2 text-sm rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition"
-              >
-                ↻ Reconnect now
-              </button>
-            </div>
-          )}
+           {engineStatus !== 'online' && (
+             <div className="max-w-2xl mx-auto mb-6 p-4 rounded-2xl bg-[#1A0F0F] border border-rose-900/50 text-center">
+               <div className="text-rose-400 font-medium mb-1">
+                 {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') 
+                   ? 'Vercel Demo: Local AI only works when running locally' 
+                   : 'Vellon Core is offline'}
+               </div>
+               <div className="text-sm text-white/60 mb-3">
+                 {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') 
+                   ? 'Deployments on Vercel cannot reach your local Ollama. Run `npm run dev` + `ollama serve` on your machine.'
+                   : 'Make sure `ollama serve` is running in another terminal.'}
+               </div>
+               <button 
+                 onClick={checkVellonCoreConnection}
+                 className="px-4 py-2 text-sm rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition"
+               >
+                 ↻ Reconnect now
+               </button>
+             </div>
+           )}
 
           {messages.length === 0 && (
             <div className="max-w-[620px] mx-auto pt-16 text-center">
