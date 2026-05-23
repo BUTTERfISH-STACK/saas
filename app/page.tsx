@@ -215,7 +215,9 @@ export default function VellonCVs() {
       const isNowOnline = await checkVellonCoreConnection();
       if (!isNowOnline) {
         toast.error('Still offline', {
-          description: 'Run ollama serve + Python backend (npm run agents). For Vercel use NEXT_PUBLIC_BACKEND_URL.'
+          description: customBackendUrl 
+            ? `Cannot reach ${customBackendUrl}. Check your public FastAPI + Ollama.` 
+            : 'Run ollama serve + Python backend. Use PREFERENCES button for Vercel.'
         });
         return;
       }
@@ -299,7 +301,9 @@ export default function VellonCVs() {
         // Only show error if still offline after re-check
         if (engineStatus !== 'online') {
           toast.error('Vellon Core unavailable', {
-            description: 'Run ollama serve + backend. For Vercel: configure NEXT_PUBLIC_BACKEND_URL to your FastAPI host.',
+            description: customBackendUrl 
+              ? `Cannot reach custom backend ${customBackendUrl}` 
+              : 'Run ollama serve + backend. Use PREFERENCES for Vercel custom URL.',
             action: {
               label: "Retry now",
               onClick: () => checkVellonCoreConnection()
@@ -398,7 +402,7 @@ export default function VellonCVs() {
               </a>
               {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
                 <div className="text-[10px] text-white/50 mt-1">
-                  For Vercel: set NEXT_PUBLIC_BACKEND_URL to your public FastAPI (connects to local Ollama via core).
+                  Use the PREFERENCES button (top bar) to set your public FastAPI URL.
                 </div>
               )}
             </div>
@@ -534,9 +538,12 @@ export default function VellonCVs() {
                  Vellon Core is offline
                </div>
                 <div className="text-sm text-white/60 mb-3">
-                  Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> + the Python backend are running.
-                  {typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && (
-                    <><br />For Vercel: set <code>NEXT_PUBLIC_BACKEND_URL</code> to your public FastAPI instance (recommended over direct Ollama).</>
+                  {customBackendUrl ? (
+                    <>Cannot reach custom backend <code className="bg-black/50 px-1 rounded">{customBackendUrl}</code>. Ensure the FastAPI is publicly running and Ollama is active behind it.</>
+                  ) : typeof window !== 'undefined' && !window.location.hostname.includes('localhost') ? (
+                    <>Click <strong>PREFERENCES</strong> (top right) to paste your public FastAPI backend URL.</>
+                  ) : (
+                    <>Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> + the Python backend are running.</>
                   )}
                 </div>
                <button 
