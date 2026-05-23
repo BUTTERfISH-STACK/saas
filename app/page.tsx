@@ -79,6 +79,21 @@ export default function VellonCVs() {
     checkVellonCoreConnection();
   }, []);
 
+  // Auto re-check every 8 seconds when offline (prevents getting stuck)
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (engineStatus === 'offline' || engineStatus === 'checking') {
+      interval = setInterval(() => {
+        checkVellonCoreConnection();
+      }, 8000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [engineStatus]);
+
   // Enhanced CV upload handler (supports images for Vision Agent)
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -245,17 +260,17 @@ export default function VellonCVs() {
       const isEngineError = err.message?.toLowerCase().includes('core') || err.message?.toLowerCase().includes('unavailable');
 
       if (isEngineError) {
-        // Automatically re-check connection (user may have just started Ollama)
         setEngineStatus('offline');
+        // Force an immediate re-check
         await checkVellonCoreConnection();
 
-        // If still offline after re-check, show helpful message
+        // Only show error if still offline after re-check
         if (engineStatus !== 'online') {
           toast.error('Vellon Core unavailable', {
-            description: 'The local AI service is not responding. Click "↻ Check connection again" in the sidebar or start Ollama.',
+            description: 'Still offline. Make sure "ollama serve" is running in another terminal, then click the retry button in the sidebar.',
             action: {
-              label: "Open guide",
-              onClick: () => window.open('/docs/troubleshooting-vellon-core.md', '_blank')
+              label: "Retry now",
+              onClick: () => checkVellonCoreConnection()
             }
           });
         }
@@ -293,7 +308,7 @@ export default function VellonCVs() {
 
   const getStatusLabel = () => {
     if (engineStatus === 'online') return 'Vellon Intelligence';
-    if (engineStatus === 'offline') return 'Core offline';
+    if (engineStatus === 'offline') return 'Core offline — click below to reconnect';
     return 'Checking Vellon Core…';
   };
 
