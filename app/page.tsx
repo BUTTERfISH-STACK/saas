@@ -538,10 +538,12 @@ export default function VellonCVs() {
                  Vellon Core is offline
                </div>
                 <div className="text-sm text-white/60 mb-3">
-                  {customBackendUrl ? (
-                    <>Cannot reach custom backend <code className="bg-black/50 px-1 rounded">{customBackendUrl}</code>. Ensure the FastAPI is publicly running and Ollama is active behind it.</>
+                  {customBackendUrl && customBackendUrl.includes('vercel.app') ? (
+                    <>You entered the <strong>Vercel frontend URL</strong> as backend. That&apos;s wrong.<br />Clear it in PREFERENCES and either use a real public FastAPI or run the project locally.</>
+                  ) : customBackendUrl ? (
+                    <>Cannot reach custom backend <code className="bg-black/50 px-1 rounded">{customBackendUrl}</code>.<br />FastAPI must be public + Ollama running on that machine.</>
                   ) : typeof window !== 'undefined' && !window.location.hostname.includes('localhost') ? (
-                    <>Click <strong>PREFERENCES</strong> (top right) to paste your public FastAPI backend URL.</>
+                    <>This is a public demo. For your local Ollama: click <strong>PREFERENCES</strong> (top right) or run locally.</>
                   ) : (
                     <>Make sure <code className="bg-black/50 px-1 rounded">ollama serve</code> + the Python backend are running.</>
                   )}
@@ -705,9 +707,14 @@ export default function VellonCVs() {
                   className="w-full bg-[#111113] border border-white/[0.1] focus:border-[var(--gold-primary)]/60 rounded-2xl px-5 py-3.5 text-sm placeholder:text-white/30 outline-none"
                 />
                 <div className="text-[11px] text-white/40 mt-2 leading-snug">
-                  Paste the public URL of your FastAPI backend here.<br />
-                  The site will immediately use it to reach your local Ollama (llama3.2:3b).<br />
-                  Saved in this browser only.
+                  Paste the <strong>public</strong> URL of your FastAPI backend (e.g. https://my-backend.onrender.com).<br />
+                  This must be a server you control that runs the Python FastAPI + has Ollama on the same machine.<br />
+                  <span className="text-rose-400">The Vercel site itself is NOT the backend.</span>
+                </div>
+
+                <div className="bg-[#1A0F0F] border border-rose-900/50 rounded-2xl p-3 text-[11px] text-rose-400">
+                  <strong>Important:</strong> If you don't have a public FastAPI URL yet, <strong>do not use this modal</strong>.<br />
+                  Instead, run the full app locally on your machine (see instructions below).
                 </div>
               </div>
 
@@ -741,6 +748,23 @@ export default function VellonCVs() {
 
               <div className="text-[10px] text-center text-white/30">
                 For local dev it defaults to http://localhost:8000 automatically.
+              </div>
+
+              <div className="pt-4 border-t border-white/[0.08]">
+                <button
+                  onClick={() => {
+                    setCustomBackendUrl(null);
+                    localStorage.removeItem('vellon_backend_url');
+                    setShowSettings(false);
+                    window.location.reload();
+                  }}
+                  className="w-full py-3 rounded-2xl border border-white/20 text-sm tracking-wider hover:bg-white/5"
+                >
+                  I don&apos;t have a public backend — run everything locally instead
+                </button>
+                <div className="text-[10px] text-center text-white/40 mt-2">
+                  In your terminal: <code className="bg-black/40 px-1">npm run full-dev</code> + <code className="bg-black/40 px-1">ollama serve</code>
+                </div>
               </div>
             </div>
           </div>
